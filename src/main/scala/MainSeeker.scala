@@ -2,11 +2,12 @@ import akka.actor.{Props, ActorSystem}
 
 object MainSeeker {
 import Seeker._
+import MasterSeeker._
 
   def main(args: Array[String]): Unit = {
     val sys = ActorSystem("system")
-    val boss = sys.actorOf(Props[Seeker], "MainSeeker")
+    val boss = sys.actorOf(Props[MasterSeeker], "MasterSeeker")
 
-    boss ! Seek("https://inf.ug.edu.pl/", 2)
+    boss ! Start("https://inf.ug.edu.pl/", 2)
   }
 }

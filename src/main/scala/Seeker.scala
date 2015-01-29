@@ -68,34 +68,20 @@ class Seeker extends Actor {
         val servers = getServersFromLinks(links)
         val serversMap = countServers(servers)
 
-        for (l <- links) println(l)
-        //for (m <- serversMap) println(m)
-
-
-        var i = 0
-
         for (link <- links) {
-          Thread.sleep(100)
-          i = i + 1
-          val seeker = context.actorOf(Props[Seeker], "Seeker_" + url.hashCode + "_child:_" + i + "_link:_" + link.hashCode)
+          val seeker = context.actorOf(Props[Seeker])
           seeker ! Seek (link, depth - 1)
         }
 
-        //val seeker = context.actorOf(Props[Seeker], "Seeker_" + url.hashCode + "_child:_" + i + "_link:_" + links.head.hashCode)
-        //seeker ! Seek (links.head, depth - 1)
         context.become(workFinished(serversMap))
       }
+    case _ => ;
   }
 
 
   def workFinished(sMap: Map[Int, String]): Receive = {
     case Result(s) =>
-      //context.parent ! Result(mergeServerMaps(s, serversMap))
-      //if(context.parent != context.system.asInstanceOf[ExtendedActorSystem].guardian) {
-        context.parent ! Result(mergeServerMaps(sMap, s))
-      //}
-      //else
-        for (m <- sMap) println(m)
+      context.parent ! Result(mergeServerMaps(sMap, s))
   }
 
 }
