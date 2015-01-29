@@ -7,6 +7,6 @@ import Seeker._
     val sys = ActorSystem("system")
     val boss = sys.actorOf(Props[Seeker], "MainSeeker")
 
-    boss ! Seek("http://google.pl/", 1)
+    boss ! Seek("http://www.wp.pl", 1)
   }
 }
