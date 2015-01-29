@@ -1,12 +1,6 @@
 import akka.actor.{Props, Actor}
 import akka.actor.Actor.Receive
 
-object Messages {
-  case class Start(url: String, depth: Int)
-  case class Seek(url: String, depth: Int)
-  case class Result(map: Map[String, Int])
-}
-
 class MasterSeeker extends Actor {
   import Messages._
 
