@@ -13,6 +13,9 @@ import akka.pattern.ask
 
 import scala.concurrent.duration._
 
+import scalaz._
+import Scalaz._
+
 /**
  * Created by Adam on 2015-01-23.
  */
@@ -38,16 +41,15 @@ object Seeker {
   }
 
   def countServers(servers: List[String]): Map[String, Int] = {
-    val map = servers.groupBy(server => server).map(temp => (temp._1, temp._2.length))
+    //val map = servers.groupBy(server => server).map(temp => (temp._1, temp._2.length))
+    val map = servers.groupBy(identity).map(temp => (temp._1, temp._2.length))
 
     ListMap(map.toSeq.sortWith(_._2 > _._2):_*)
   }
 
   def mergeServerMaps(map1: Map[String, Int], map2: Map[String, Int]): Map[String, Int] = {
-    val mergedKeyMaps = map1.keySet ++ map2.keySet
-    ListMap(mergedKeyMaps.map(key =>
-      (key, map1.getOrElse(key, 0) + map2.getOrElse(key, 0))
-    ).toMap.toSeq.sortWith(_._2 > _._2):_*)
+    val merged = (map1.keys ++ map2.keys).map(key => key -> (map1.getOrElse(key, 0) + map2.getOrElse(key, 0))).toMap
+    ListMap(merged.toSeq.sortWith(_._2 > _._2):_*)
   }
 }
 
@@ -76,25 +78,27 @@ class Seeker extends Actor {
           val seeker = context.actorOf(Props[Seeker])
           seeker ! Seek(link, depth -1)
         }
-        context.become(workFinished(serversMap, links.length))
+        if (links.length == 0)
+          sender() ! Result(Map[String, Int]())
+        else
+          context.become(waitingForResults(serversMap, links.length))
 
+        if (self.path.name == "main")
+          Thread.sleep(1000)
       }
-    case _ => ;
   }
 
-  def workFinished(sMap: Map[String, Int], answersToReceive: Int): Receive = {
+  def waitingForResults(sMap: Map[String, Int], answersToReceive: Int): Receive = {
     case Result(s) =>
-      if (answersCounter == 0)
+      if (answersCounter == 0) {
         mainServersMap = sMap
+      }
 
       mainServersMap = mergeServerMaps(sMap, s)
       answersCounter = answersCounter + 1
-      //println(self.path.name + " " + answersCounter)
 
       if (answersCounter == answersToReceive) {
-        println("XXXXXXXXXXXXXXXXXXXXX")
         context.parent ! Result(mainServersMap)
-        println(mainServersMap)
       }
   }
 }
