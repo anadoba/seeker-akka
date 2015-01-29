@@ -1,7 +1,7 @@
 import java.io.IOException
 import java.net.URL
 
-import akka.actor.{PoisonPill, Actor}
+import akka.actor._
 import akka.actor.Actor.Receive
 import org.xml.sax.InputSource
 
@@ -38,51 +38,64 @@ object Seeker {
   def countServers(servers: List[String]): Map[Int, String] = {
     val map = servers.groupBy(server => server).map(temp => (temp._2.length, temp._1))
 
-    return ListMap(map.toSeq.sortWith(_._1 > _._1):_*)
+    ListMap(map.toSeq.sortWith(_._1 > _._1):_*)
   }
 
   def mergeServerMaps(map1: Map[Int, String], map2: Map[Int, String]): Map[Int, String] = {
     val tempMap1 = map1.map(t => (t._2, t._1))
     val tempMap2 = map2.map(t => (t._2, t._1))
 
-    (tempMap1 ++ tempMap2).map {
+    val merged = (tempMap1 ++ tempMap2).map {
       case(server, count) => server -> (count + tempMap1.getOrElse(server, 0))
     }.map(t => (t._2, t._1))
+
+    ListMap(merged.toSeq.sortWith(_._1 > _._1):_*)
   }
 }
 
+
 class Seeker extends Actor {
   import Seeker._
-
-  var servers: Map[Int, String] = Map[Int, String]()
 
   override def receive = init
 
   def init: Receive = {
     case Seek(url, depth) =>
       if (depth == 0)
-        sender() ! Result(Map[Int, String]())
+        context.parent ! Result(Map[Int, String]())
       else {
         val links = getLinksFromPage(url)
-        //for (link <- links) println(link)
         val servers = getServersFromLinks(links)
-        val map = countServers(servers)
-        for (m <- map) println(m)
+        val serversMap = countServers(servers)
+
+        for (l <- links) println(l)
+        //for (m <- serversMap) println(m)
 
 
-        self ! PoisonPill
-        sender() ! PoisonPill
+        var i = 0
+
+        for (link <- links) {
+          Thread.sleep(100)
+          i = i + 1
+          val seeker = context.actorOf(Props[Seeker], "Seeker_" + url.hashCode + "_child:_" + i + "_link:_" + link.hashCode)
+          seeker ! Seek (link, depth - 1)
+        }
+
+        //val seeker = context.actorOf(Props[Seeker], "Seeker_" + url.hashCode + "_child:_" + i + "_link:_" + links.head.hashCode)
+        //seeker ! Seek (links.head, depth - 1)
+        context.become(workFinished(serversMap))
       }
+  }
 
+
+  def workFinished(sMap: Map[Int, String]): Receive = {
     case Result(s) =>
-      context.parent ! Result(mergeServerMaps(s, servers))
+      //context.parent ! Result(mergeServerMaps(s, serversMap))
+      //if(context.parent != context.system.asInstanceOf[ExtendedActorSystem].guardian) {
+        context.parent ! Result(mergeServerMaps(sMap, s))
+      //}
+      //else
+        for (m <- sMap) println(m)
   }
 
-  def initializedToSeek(url: String, depth: Int): Receive = {
-    case _ => ;
-  }
-
-  def seekingFinished(): Receive = {
-    case _ => ;
-  }
 }

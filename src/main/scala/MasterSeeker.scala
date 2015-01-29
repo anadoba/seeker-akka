@@ -1,4 +1,5 @@
 import akka.actor.Actor
+import akka.actor.Actor.Receive
 
 object MasterSeeker {
   sealed abstract class MasterSeekerMsg
@@ -6,9 +7,7 @@ object MasterSeeker {
 
 class MasterSeeker extends Actor {
 
-  def init: Receive = {
+  override def receive: Receive = {
     case _ => ;
   }
-
-  override def receive = init
 }
