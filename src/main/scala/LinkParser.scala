@@ -13,6 +13,8 @@ class LinkParser extends NoBindingFactoryAdapter {
     loadXML(source)
   }
 
+  // zamiast parsera REGEX
+
   def loadXML(source : InputSource) = {
     import nu.validator.htmlparser.common.XmlViolationPolicy
     import nu.validator.htmlparser.sax.HtmlParser

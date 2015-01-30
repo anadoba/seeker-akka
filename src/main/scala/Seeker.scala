@@ -18,17 +18,17 @@ object Seeker {
       parser.loadXML(new InputSource(url))
       val links = parser.getLinks()
         .filter(link => link.startsWith("http"))
-        .map(link => link.replace("https", "http"))
+        .map(link => link.replace("https", "http")).map(link => link.replace(" ", ""))
 
-      return links
+      links
     } catch {
       case e: IOException =>
-        return List[String]()
+        List[String]()
     }
   }
 
   def getServersFromLinks(links: List[String]): List[String] = {
-    for (link <- links) yield new URL(link).getHost
+    for (link <- links) yield new URL(link).getHost // tutaj uzyc spray
   }
 
   def countServers(servers: List[String]): Map[String, Int] = {

@@ -7,6 +7,6 @@ import Messages._
     val sys = ActorSystem("system")
     val masterSeeker = sys.actorOf(Props[MasterSeeker], "MasterSeeker")
 
-    masterSeeker ! Start("https://inf.ug.edu.pl/", 3)
+    masterSeeker ! Start("https://www.google.pl/", 3)
   }
 }
