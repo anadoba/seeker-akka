@@ -1,18 +1,42 @@
+
 import java.io.IOException
 import java.net.URL
 
-import akka.actor._
-
 import org.xml.sax.InputSource
 
+import scala.util.Success
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import akka.pattern.ask
+import spray.http.HttpResponse
+import spray.http.HttpEntity
+import spray.can.Http
+import akka.io.IO
+
 import scala.collection.immutable.ListMap
+import scala.concurrent.Future
+
+import akka.actor._
+
+import scala.concurrent.{Await, Future}
+
+import scala.io.Source
+
+import spray.http._
 
 /**
  * Created by Adam on 2015-01-23.
  */
 object Seeker {
+  implicit val system = ActorSystem()
+  import system.dispatcher // execution context for futures
+  import spray.http._
+  import spray.client.pipelining._
 
   def getLinksFromPage(url: String): List[String] = {
+
+
     val parser = new LinkParser
     try  {
       parser.loadXML(new InputSource(url))
@@ -25,10 +49,42 @@ object Seeker {
       case e: IOException =>
         List[String]()
     }
+
+    /*
+
+    WERSJA OPARTA NA KLIENCIE SPRAY.io
+
+    //val regex = "\\b(([\\w-]+://?|www[.])[^\\s()<>]+(?:\\([\\w\\d]+\\)|([^[:punct:]\\s]|/)))".r
+    val regex = "<a href=\"([^\"]*)\"".r
+
+    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+    val responseFuture: Future[HttpResponse] = pipeline(Get(url))
+
+    var plainHtml: String = ""
+
+    responseFuture.onComplete{
+      case Success(response) => plainHtml = response.entity.asString
+
+      case _ => println("Stalo sie cos zlego")
+    }
+
+    val listOfLinks = regex.findAllIn(plainHtml)
+
+    val result = listOfLinks.toList
+
+    //for (link <- result) link.replace("<a href=\"", "")
+    //for (link <- result) println(link)
+
+    result
+
+    */
   }
 
   def getServersFromLinks(links: List[String]): List[String] = {
-    for (link <- links) yield new URL(link).getHost // tutaj uzyc spray
+    for (link <- links) yield new URL(link).getHost
+
+    // uzyc spray, aby pobrac hosta
+    //for (link <- links) yield Uri.apply(link).authority.host.toString
   }
 
   def countServers(servers: List[String]): Map[String, Int] = {
